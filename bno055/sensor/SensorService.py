@@ -41,6 +41,8 @@ from rclpy.qos import QoSProfile
 from sensor_msgs.msg import Imu, MagneticField, Temperature
 from std_msgs.msg import String
 from example_interfaces.srv import Trigger
+import tf_transformations
+import math
 
 
 class SensorService:
@@ -57,6 +59,7 @@ class SensorService:
         # create topic publishers:
         self.pub_imu_raw = node.create_publisher(Imu, prefix + 'imu_raw', QoSProf)
         self.pub_imu = node.create_publisher(Imu, prefix + 'imu', QoSProf)
+        self.pub_imu_rpy = node.create_publisher(Vector3, prefix + 'imu_rpy', QoSProf)
         self.pub_mag = node.create_publisher(MagneticField, prefix + 'mag', QoSProf)
         self.pub_grav = node.create_publisher(Vector3, prefix + 'grav', QoSProf)
         self.pub_temp = node.create_publisher(Temperature, prefix + 'temp', QoSProf)
@@ -204,6 +207,31 @@ class SensorService:
         imu_msg.orientation.y = q.y / norm
         imu_msg.orientation.z = q.z / norm
         imu_msg.orientation.w = q.w / norm
+        quaternion = (
+            imu_msg.orientation.x,
+            imu_msg.orientation.y,
+            imu_msg.orientation.z,
+            imu_msg.orientation.w
+        )
+        euler = tf_transformations.euler_from_quaternion(quaternion)
+        # tmp_q = imu_msg.orientation
+        # # Convert quaternion to Euler angles
+        # euler = tf_transformations.euler_from_quaternion(tmp_q)
+        roll, pitch, yaw = euler
+
+        # Convert yaw to degrees
+        yaw_degrees = math.degrees(yaw)
+
+        # Adjust yaw to be within [0, 360] degrees
+        yaw_degrees = yaw_degrees % 360
+        if yaw_degrees < 0:
+            yaw_degrees += 360
+
+        print(yaw_degrees)
+        rpy_msg = Vector3()
+        rpy_msg.x = roll
+        rpy_msg.y = pitch
+        rpy_msg.z = yaw_degrees
 
         imu_msg.orientation_covariance = imu_raw_msg.orientation_covariance
 
@@ -222,7 +250,7 @@ class SensorService:
             self.unpackBytesToFloat(buf[16], buf[17]) / self.param.gyr_factor.value
         imu_msg.angular_velocity_covariance = imu_raw_msg.angular_velocity_covariance
         self.pub_imu.publish(imu_msg)
-
+        self.pub_imu_rpy.publish(rpy_msg)
         # Publish magnetometer data
         mag_msg.header.stamp = self.node.get_clock().now().to_msg()
         mag_msg.header.frame_id = self.param.frame_id.value

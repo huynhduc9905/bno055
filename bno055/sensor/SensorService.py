@@ -220,18 +220,18 @@ class SensorService:
         roll, pitch, yaw = euler
 
         # Convert yaw to degrees
-        yaw_degrees = math.degrees(yaw)
+      #  yaw_degrees = math.degrees(yaw)
 
-        # Adjust yaw to be within [0, 360] degrees
-        yaw_degrees = yaw_degrees % 360
-        if yaw_degrees < 0:
-            yaw_degrees += 360
+      #  # Adjust yaw to be within [0, 360] degrees
+      #  yaw_degrees = yaw_degrees % 360
+      #  if yaw_degrees < 0:
+      #      yaw_degrees += 360
 
-        print(yaw_degrees)
+      #  print(yaw_degrees)
         rpy_msg = Vector3()
         rpy_msg.x = roll
         rpy_msg.y = pitch
-        rpy_msg.z = yaw_degrees
+        rpy_msg.z = yaw
 
         imu_msg.orientation_covariance = imu_raw_msg.orientation_covariance
 
